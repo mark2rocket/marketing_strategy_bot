@@ -9,6 +9,7 @@ import {
   ResourceUtilizationChart,
   KPIComparisonChart,
 } from '../charts';
+import { ProjectManagement } from '../project';
 import { strategyApi } from '../../api/strategyApi';
 
 interface StrategyDetailModalProps {
@@ -31,9 +32,9 @@ export const StrategyDetailModal: React.FC<StrategyDetailModalProps> = ({
     null
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'charts' | 'details'>(
-    'overview'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'charts' | 'details' | 'projects'
+  >('overview');
 
   useEffect(() => {
     const loadDetail = async () => {
@@ -129,6 +130,16 @@ export const StrategyDetailModal: React.FC<StrategyDetailModalProps> = ({
               }`}
             >
               상세
+            </button>
+            <button
+              onClick={() => setActiveTab('projects')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'projects'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              프로젝트 관리
             </button>
           </div>
         </div>
@@ -361,6 +372,19 @@ export const StrategyDetailModal: React.FC<StrategyDetailModalProps> = ({
                       </Card>
                     )}
                 </div>
+              )}
+
+              {/* Projects Tab */}
+              {activeTab === 'projects' && detailedStrategy && (
+                <ProjectManagement
+                  strategyId={strategy.id}
+                  initialProjects={detailedStrategy.projects || []}
+                  onProjectsChange={(updatedProjects) => {
+                    setDetailedStrategy((prev) =>
+                      prev ? { ...prev, projects: updatedProjects } : null
+                    );
+                  }}
+                />
               )}
             </>
           )}
