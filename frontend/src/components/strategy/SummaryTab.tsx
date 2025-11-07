@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useStrategyStore } from '../../store/strategyStore';
 import { PeriodSelector } from './PeriodSelector';
 import { StrategyList } from './StrategyList';
+import { StrategyDetailModal } from './StrategyDetailModal';
 import { Button } from '../ui/Button';
 import { MarketingStrategy, PeriodType } from '../../types';
 
@@ -16,6 +17,9 @@ export const SummaryTab: React.FC = () => {
   } = useStrategyStore();
 
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<MarketingStrategy | null>(
+    null
+  );
   const [tempFilters, setTempFilters] = useState<{
     periodType: PeriodType;
     year: number;
@@ -52,8 +56,7 @@ export const SummaryTab: React.FC = () => {
   };
 
   const handleStrategyClick = (strategy: MarketingStrategy) => {
-    // TODO: Navigate to strategy detail page or open modal
-    console.log('Strategy clicked:', strategy);
+    setSelectedStrategy(strategy);
   };
 
   const hasActiveFilters = filters.periodType || filters.year;
@@ -154,6 +157,14 @@ export const SummaryTab: React.FC = () => {
           />
         )}
       </div>
+
+      {/* Strategy Detail Modal */}
+      {selectedStrategy && (
+        <StrategyDetailModal
+          strategy={selectedStrategy}
+          onClose={() => setSelectedStrategy(null)}
+        />
+      )}
     </div>
   );
 };
