@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import strategyRoutes from './routes/strategyRoutes';
+import chatRoutes from './routes/chatRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -26,6 +27,7 @@ app.get('/api', (req: Request, res: Response) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/strategies', strategyRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);
