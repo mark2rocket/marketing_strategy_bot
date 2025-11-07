@@ -90,16 +90,31 @@
   - 액션 아이템 (Action Items)
   - 타임라인 (Timeline)
 
-### 4.2 액션 아이템 관리 (MVP)
+### 4.2 프로젝트 및 액션 아이템 관리 (MVP)
+- **프로젝트/태스크 구조화**
+  - 전략 내 여러 프로젝트 생성 및 관리
+  - 각 프로젝트 하위에 태스크(액션 아이템) 배치
+  - 프로젝트별 진행률 추적
+
+- **리소스 관리**
+  - **기간 설정**: 프로젝트/태스크의 시작일 및 종료일
+  - **소요 기간**: 월 단위 기간 (예: 2개월, 3개월)
+  - **투입 맨먼스 (Man-Month)**: 인력 투입 규모 설정
+    - 예: 0.5MM (1명이 절반만 투입), 2MM (2명 풀타임 또는 1명 2개월)
+    - 프로젝트 단위 및 태스크 단위 모두 설정 가능
+    - 전체 맨먼스 자동 합산 및 예산 연동
+
 - **체크리스트 자동 생성**
   - 대화에서 도출된 실행 과제 정리
   - 우선순위 자동 분류 (High/Medium/Low)
   - 담당자 할당 필드
   - 기한 설정 필드
+  - 예상 공수(맨먼스) 자동 제안
 
 - **마일스톤 관리**
   - 주요 이정표 타임라인
   - 의존성 관계 표시
+  - 리소스 병목 구간 시각화
 
 ### 4.3 KPI 및 지표 설정 (MVP)
 - **목표 지표 제안**
@@ -273,7 +288,8 @@ interface MarketingStrategy {
   channels: MarketingChannel[];
   budget: Budget;
   kpis: KPI[];
-  actionItems: ActionItem[];
+  projects: Project[]; // 프로젝트 단위 관리
+  actionItems: ActionItem[]; // 프로젝트 외 독립 액션 아이템
   timeline: Timeline;
 
   createdAt: Date;
@@ -290,14 +306,51 @@ interface Goal {
   timeBound: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+
+  // 기간 및 리소스
+  startDate: Date;
+  endDate: Date;
+  durationMonths: number; // 소요 기간 (월)
+  manMonths: number; // 투입 맨먼스 (예: 0.5, 1, 2.5)
+
+  // 상태 및 진행
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
+  progress: number; // 0-100
+
+  // 예산 및 인력
+  budget?: number;
+  teamMembers?: string[];
+
+  // 하위 태스크
+  tasks: ActionItem[];
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface ActionItem {
   id: string;
   title: string;
   description: string;
   priority: 'High' | 'Medium' | 'Low';
-  assignee?: string;
+
+  // 기간 및 리소스
+  startDate?: Date;
   dueDate: Date;
+  durationMonths?: number; // 소요 기간 (월)
+  manMonths?: number; // 투입 맨먼스 (예: 0.1, 0.5, 1)
+
+  // 담당 및 상태
+  assignee?: string;
   status: 'Not Started' | 'In Progress' | 'Completed';
+  progress?: number; // 0-100
+
+  // 관계
+  projectId?: string; // 소속 프로젝트 ID (있는 경우)
   dependencies?: string[]; // Other action item IDs
 }
 
