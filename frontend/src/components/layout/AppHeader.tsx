@@ -1,11 +1,11 @@
 import React from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { useUiStore } from '../../store/uiStore';
+import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/Button';
 
 export const AppHeader: React.FC = () => {
   const { user, logout } = useAuthStore();
-  const { theme, toggleTheme } = useUiStore();
+  const { theme, toggleTheme } = useUIStore();
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
