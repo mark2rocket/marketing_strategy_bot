@@ -1,0 +1,303 @@
+// Prisma Schema for Marketing Strategy Bot
+// PRD 기반 데이터베이스 설계
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User Management
+// ============================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategies MarketingStrategy[]
+
+  @@map("users")
+}
+
+// ============================================
+// Marketing Strategy (Core Entity)
+// ============================================
+
+model MarketingStrategy {
+  id     String @id @default(uuid())
+  userId String
+
+  // 시간 단위 정보
+  periodType  PeriodType // yearly | quarterly | monthly
+  year        Int
+  quarter     Int?       // 1-4 (분기인 경우)
+  month       Int?       // 1-12 (월별인 경우)
+  periodLabel String     // "2024-Q1", "2024-03", "2024"
+
+  // 전략 정보
+  title       String?
+  description String?
+
+  // 예산
+  totalBudget Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals         Goal[]
+  targetAudience TargetAudience?
+  channels      Channel[]
+  kpis          KPI[]
+  projects      Project[]
+  actionItems   ActionItem[] // 프로젝트 외 독립 액션 아이템
+
+  @@unique([userId, year, quarter, month, periodType])
+  @@map("marketing_strategies")
+}
+
+enum PeriodType {
+  YEARLY
+  QUARTERLY
+  MONTHLY
+}
+
+// ============================================
+// Goals
+// ============================================
+
+model Goal {
+  id         String @id @default(uuid())
+  strategyId String
+
+  // SMART 목표
+  description String
+  specific    String
+  measurable  String
+  achievable  Boolean @default(true)
+  relevant    String
+  timeBound   String
+
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+// ============================================
+// Target Audience
+// ============================================
+
+model TargetAudience {
+  id         String @id @default(uuid())
+  strategyId String @unique
+
+  // 타겟 정보
+  segments    String[] // 타겟 세그먼트 배열
+  demographics String?
+  psychographics String?
+  painPoints  String[] // 고객 pain points
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@map("target_audiences")
+}
+
+// ============================================
+// Marketing Channels
+// ============================================
+
+model Channel {
+  id         String @id @default(uuid())
+  strategyId String
+
+  name        String // "Social Media", "Email", "SEO", etc.
+  description String?
+  budget      Float?
+  priority    Priority @default(MEDIUM)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@map("channels")
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+// ============================================
+// KPIs (Key Performance Indicators)
+// ============================================
+
+model KPI {
+  id         String @id @default(uuid())
+  strategyId String
+
+  name              String
+  target            Float
+  unit              String // "%", "명", "원", etc.
+  currentValue      Float?
+  measurementMethod String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@map("kpis")
+}
+
+// ============================================
+// Projects (프로젝트 단위 관리)
+// ============================================
+
+model Project {
+  id         String @id @default(uuid())
+  strategyId String
+
+  name        String
+  description String?
+
+  // 기간 및 리소스
+  startDate      DateTime
+  endDate        DateTime
+  durationMonths Float // 소요 기간 (월)
+  manMonths      Float // 투입 맨먼스 (예: 0.5, 1, 2.5)
+
+  // 상태 및 진행
+  status   ProjectStatus @default(NOT_STARTED)
+  progress Int           @default(0) // 0-100
+
+  // 예산 및 인력
+  budget      Float?
+  teamMembers String[] // 팀원 이름 배열
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy    MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  tasks       ActionItem[]      // 하위 태스크
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+// ============================================
+// Action Items (액션 아이템 / 태스크)
+// ============================================
+
+model ActionItem {
+  id         String  @id @default(uuid())
+  strategyId String
+  projectId  String? // 소속 프로젝트 ID (선택적)
+
+  title       String
+  description String?
+  priority    Priority @default(MEDIUM)
+
+  // 기간 및 리소스
+  startDate      DateTime?
+  dueDate        DateTime
+  durationMonths Float? // 소요 기간 (월)
+  manMonths      Float? // 투입 맨먼스 (예: 0.1, 0.5, 1)
+
+  // 담당 및 상태
+  assignee String?
+  status   ActionItemStatus @default(NOT_STARTED)
+  progress Int?             @default(0) // 0-100
+
+  // 의존성
+  dependencies String[] // Other action item IDs
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  strategy MarketingStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  project  Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("action_items")
+}
+
+enum ActionItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// ============================================
+// Chat Sessions (대화 세션 관리)
+// ============================================
+
+model ChatSession {
+  id         String @id @default(uuid())
+  userId     String
+  strategyId String?
+
+  // 세션 정보
+  title     String?
+  isActive  Boolean @default(true)
+  context   Json? // 대화 컨텍스트 저장
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages ChatMessage[]
+
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String @id @default(uuid())
+  sessionId String
+
+  role    MessageRole // user | assistant | system
+  content String
+  metadata Json? // 추가 메타데이터
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
